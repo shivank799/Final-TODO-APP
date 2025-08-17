@@ -97,7 +97,7 @@
       become: yes
       synchronize:
         src: "{{ playbook_dir }}/../../"
-        dest: "/opt/reactapp"
+        dest: "/opt/todo-app"
         delete: yes
         recursive: yes
         rsync_opts:
