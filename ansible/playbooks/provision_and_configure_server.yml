@@ -104,3 +104,10 @@
           - "--exclude=.git"
           - "--exclude=ansible"
           - "--exclude=.github"
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['magic_hosts'] }}"
+      vars:
+        ansible_ssh_private_key_file: "{{ ec2_ssh_key_file }}"
+        ansible_user: ec2-user
+      when: groups["magic_hosts"] is defined and groups["magic_hosts"] | length >0
