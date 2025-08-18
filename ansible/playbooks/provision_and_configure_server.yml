@@ -104,7 +104,6 @@
           - "--exclude=.git"
           - "--exclude=ansible"
           - "--exclude=.github"
-      delegate_to: "{{ item }}"
       with_items:
         - "{{ groups['magic_hosts'] }}"
       vars:
