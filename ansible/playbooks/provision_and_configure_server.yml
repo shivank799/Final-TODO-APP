@@ -11,12 +11,12 @@
         region: us-east-1
         rules:
           - proto: tcp
-            from_port: 22
-            to_port: 22
-            cidr_ip: 0.0.0.0/0
-          - proto: tcp
             from_port: 3001
             to_port: 3001
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
             cidr_ip: 0.0.0.0/0
           - proto: tcp
             from_port: 3000
@@ -39,21 +39,17 @@
         instance_type: t2.micro
         image_id: ami-0de716d6197524dd9
         count: 1
-        wait: true
-        network:
-          assign_public_id: true
-        security_group_ids:
-          - "{{ security_group.group_id }}"
+        security_group: "{{ security_group.group_id }}"
       register: ec2
 
     - name: Wait for instance to be ready
       wait_for:
         host: "{{ ec2.instance[0].public_dns_name }}"
         port: 22
-        delay: 25
-        timeout: 600
+        delay: 30
+        timeout: 300
         state: started
-      when: ec2.instance is defined and (ec2.instances | length) > 0
+      when: ec2.instance is defined and ec2.instances | length > 0
     - name: Add Ec2 instance to inventory dynamically
       add_host:
         name: "{{ec2.instances[0].public_dns_name}}"
@@ -69,24 +65,18 @@
       debug:
         var: groups['magic_hosts']
 
-    - name: Configure web stack on new Ec2
-      hosts: magic_hosts
-      gather_facts: yes
-      vars:
-        ansible_ssh_private_key_file: "{{ ec2_ssh_key_file }}"
-        ansible_user: ec2-user
-      tasks:
-        - name: Ensure rsync is present (needed for synchronize)
-          become: yes
-          package:
-            name: rsync
-            state: present
-
-    - name: Install Apache httpd
+    - name: Install common packages
       become: yes
       package:
         name: httpd
         state: present
+      delegate_to: "{{ item }}"
+      with_items:
+        - "{{ groups['magic_hosts'] }}"
+      vars:
+        ansible_ssh_private_key_file: "{{ ec2_ssh_key_file }}"
+        ansible_user: ec2-user
+      when: groups["magic_hosts"] is defined and groups["magic_hosts"] | length >0
 
   
     - name: Start and enable ensible
